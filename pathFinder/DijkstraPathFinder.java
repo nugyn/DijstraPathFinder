@@ -5,6 +5,8 @@ import map.PathMap;
 import map.Node;
 import java.util.*;
 
+import com.sun.org.apache.xalan.internal.lib.NodeInfo;
+
 public class DijkstraPathFinder implements PathFinder
 {
     /* PSEUDO:
@@ -69,7 +71,6 @@ public class DijkstraPathFinder implements PathFinder
         List<Coordinate> path = new ArrayList<Coordinate>();
         Node currNode = sourceNode;
         while(!currNode.visited && currNode != null) {
-            System.out.println(currNode.coord);
 
             ArrayList<Node> currNeighBours = currNode.notVisited();
             if((explorable(currNode) || (!currNeighBours.isEmpty() && currNeighBours != null)) &&
@@ -100,29 +101,59 @@ public class DijkstraPathFinder implements PathFinder
     }
     
     public ArrayList<Node> ScanAround(Node parentNode) {
-        //Look for from x,y: (X, Y + 1), (X + 1, Y), (X, Y - 1), (X - 1, Y), create node and then add it to its neighBour.
-        int c ,r;
-        c = parentNode.coord.getColumn();
-        r = parentNode.coord.getRow();    
 
+        /* UP: [r + 1][c] 
+        RIGHT: [r][ c + 1] 
+        DOWN: [r - 1][c] 
+        LEFT: [r][c - 1] 
+        
+        ISSUE: Base Condition for when r or c are 0 (Creates Index out of Bounds)*/
+
+        int c = 0;
+        int r = 0;
+        
         //Build neighbours
+    
         if(parentNode.scanned == false) {
-            if(map.isIn(map.cells[r][c + 1])){
-                Node neighbour = new Node(map.cells[r][c + 1], parentNode);
-                parentNode.addNeighbour(neighbour);
-            }
-            if(map.isIn(map.cells[r + 1][c])){
-                Node neighbour = new Node(map.cells[r + 1][c], parentNode);
-                parentNode.addNeighbour(neighbour);
-            }
-            if(map.isIn(map.cells[r][c - 1])){
-                Node neighbour = new Node(map.cells[r][c - 1], parentNode);
-                parentNode.addNeighbour(neighbour);
-            }
-            if(map.isIn(map.cells[r - 1][c])){
-                Node neighbour = new Node(map.cells[r - 1][c], parentNode);
-                parentNode.addNeighbour(neighbour);
-            }
+                try{
+                    if(map.isIn(map.cells[r + 1][c])){
+                        Node neighbour = new Node(map.cells[r + 1][c], parentNode);
+                        parentNode.addNeighbour(neighbour);
+                    }  
+                }
+                catch(IndexOutOfBoundsException e){
+                    System.out.println("No Go");
+                }
+                try{
+                    if(map.isIn(map.cells[r][c + 1])){
+                        Node neighbour = new Node(map.cells[r][c + 1], parentNode);
+                        parentNode.addNeighbour(neighbour);
+                    }
+                }
+                catch(IndexOutOfBoundsException e){
+                    System.out.println("No Go");
+
+                }
+                try{
+                    if(map.isIn(map.cells[r - 1][c])){
+                        Node neighbour = new Node(map.cells[r - 1][c], parentNode);
+                        parentNode.addNeighbour(neighbour);
+                    }
+                }
+                catch(IndexOutOfBoundsException e){
+                    System.out.println("No Go");
+
+                }
+                try{
+                    if(map.isIn(map.cells[r][c - 1])){
+                        Node neighbour = new Node(map.cells[r][c - 1], parentNode);
+                        parentNode.addNeighbour(neighbour);
+                    }
+                }
+                catch(IndexOutOfBoundsException e){
+                    System.out.println("No Go");
+
+                }
         }             
         return parentNode.notVisited();
 
