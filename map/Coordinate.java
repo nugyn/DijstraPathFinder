@@ -73,6 +73,9 @@ public class Coordinate {
 
     public int getColumn() { return c; }
 
+    public int[] getPosition() {
+        return new int[]{r,c};
+    }
 
     public void setImpassable(boolean impassable) {
         isImpassable = impassable;
