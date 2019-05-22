@@ -16,7 +16,7 @@ public class Node {
         this.parent = parent;
         this.coord = node;
         if(parent!=null) {
-            this.accumlativeCost = parent.coord.terrainCost + coord.terrainCost;
+            this.accumlativeCost += this.coord.terrainCost + parent.accumlativeCost;
         }
     }
 
@@ -40,13 +40,13 @@ public class Node {
         */
         ArrayList<Node> result = new ArrayList<Node>();
 
-        if(neighbours != null && parent != null) {
+        if(neighbours != null) {
             for(Node node: neighbours) {
-                if(node.visited = true) {
+                if(node.visited != true) {
                     result.add(node);
                 }
             }
-            if(result.isEmpty()) {
+            if(result.isEmpty() && parent != null) {
                 parent.removeNeighbour(this);
                 // this.visited = true;
             }

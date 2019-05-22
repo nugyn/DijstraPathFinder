@@ -5,8 +5,6 @@ import map.PathMap;
 import map.Node;
 import java.util.*;
 
-import com.sun.org.apache.xalan.internal.lib.NodeInfo;
-
 public class DijkstraPathFinder implements PathFinder
 {
     /* PSEUDO:
@@ -22,8 +20,8 @@ public class DijkstraPathFinder implements PathFinder
      */
 
     private PathMap map;
-    private Map<Node, Integer> totalWeight = new HashMap<Node, Integer>();
-    private Map<Node, ArrayList<Node>> shortestPaths = new HashMap<Node, ArrayList<Node>>();
+    private Map<Coordinate, Integer> totalWeight = new HashMap<Coordinate, Integer>();
+    private Map<Coordinate, List<Coordinate>> shortestPaths = new HashMap<Coordinate, List<Coordinate>>();
     private Coordinate sourceCoord;
     private Coordinate destinationCoord;
     private Node sourceNode;
@@ -42,28 +40,29 @@ public class DijkstraPathFinder implements PathFinder
            If it's smaller, we update the ArrayList<Node> for it. */
 
         int currWeight = currNode.accumlativeCost;
-        ArrayList<Node> currentPath = new ArrayList<Node>();
+        ArrayList<Coordinate> currentPath = new ArrayList<Coordinate>();
         try {
-            int weight = (int) totalWeight.get(currNode);
+            int weight = (int) totalWeight.get(currNode.coord); // store coordinate instead of currentNode.
             if(currWeight < weight) {
-                totalWeight.put(currNode, currWeight);
+                totalWeight.put(currNode.coord, currWeight);
                 /*  update in the map list */
                 while(currNode.parent != null) {
-                    currentPath.add(currNode);
+                    currentPath.add(currNode.coord);
                     currNode = currNode.parent;
                 }
-                shortestPaths.put(currNode, currentPath);
+                shortestPaths.put(currNode.coord, currentPath);
                 return true;
+            } else  {
+                return false;
             }
         } catch(NullPointerException e) {
             /* Happens when dictionary doesn't contain the Node, so the first item in the dictionary. */
 
-            totalWeight.put(currNode, currWeight);
-            currentPath.add(currNode);
-            shortestPaths.put(currNode, currentPath);
+            totalWeight.put(currNode.coord, currWeight);
+            currentPath.add(currNode.coord);
+            shortestPaths.put(currNode.coord, currentPath);
             return true;
         }
-        return false;
     }
 
     @Override
@@ -71,27 +70,32 @@ public class DijkstraPathFinder implements PathFinder
         List<Coordinate> path = new ArrayList<Coordinate>();
         Node currNode = sourceNode;
         while(!currNode.visited && currNode != null) {
-
+            System.out.println("Current node:" + currNode.coord);
             ArrayList<Node> currNeighBours = currNode.notVisited();
-            if((explorable(currNode) || (!currNeighBours.isEmpty() && currNeighBours != null)) &&
-                currNode.getPosition() != destinationCoord.getPosition()) {
+            //When we reach our goal... It . (The nodes we do not vist)
+            boolean notDestination = isNotDestination(currNode.coord);
+            boolean existNotVisitedChild = (!currNeighBours.isEmpty() && currNeighBours != null);
+            if(((explorable(currNode)  && isNotDestination(currNode.coord)) || (!currNeighBours.isEmpty() && currNeighBours != null))) {
                 /* (if it's explorable or it has no children left to vist) and not the goal */
-                ArrayList<Node> unvisited = ScanAround(currNode);
+                ArrayList<Node> unvisited = ScanAround(currNode); // this is where we add neighbours
                 try {
-                    currNode = unvisited.get(0);
+                    currNode = unvisited.get(0); // problem
                 } catch (NullPointerException e) {
                     /* If the unvisited list is empty */
+                                    System.out.println(e);
                     currNode = currNode.parent;
                 }
             } else {
+                                    System.out.println("check6");
                 if(currNode.parent != null) {
                     currNode.parent.removeNeighbour(currNode);
                 }
                 currNode.visited = true;
                 currNode = currNode.parent;
             }
+            System.out.println("---end of loop---");
         }
-        System.out.println(currNode);
+        path = shortestPaths.get(destinationCoord);
         return path;
     } // end of findPath()
 
@@ -109,56 +113,62 @@ public class DijkstraPathFinder implements PathFinder
         
         ISSUE: Base Condition for when r or c are 0 (Creates Index out of Bounds)*/
 
-        int c = 0;
-        int r = 0;
-        
+        int c = parentNode.coord.getColumn();
+        int r = parentNode.coord.getRow();
+        int i = 0;
         //Build neighbours
-    
+
         if(parentNode.scanned == false) {
-                try{
-                    if(map.isIn(map.cells[r + 1][c])){
-                        Node neighbour = new Node(map.cells[r + 1][c], parentNode);
-                        parentNode.addNeighbour(neighbour);
-                    }  
-                }
-                catch(IndexOutOfBoundsException e){
-                    System.out.println("No Go");
-                }
-                try{
-                    if(map.isIn(map.cells[r][c + 1])){
-                        Node neighbour = new Node(map.cells[r][c + 1], parentNode);
-                        parentNode.addNeighbour(neighbour);
-                    }
-                }
-                catch(IndexOutOfBoundsException e){
-                    System.out.println("No Go");
 
-                }
-                try{
-                    if(map.isIn(map.cells[r - 1][c])){
-                        Node neighbour = new Node(map.cells[r - 1][c], parentNode);
-                        parentNode.addNeighbour(neighbour);
-                    }
-                }
-                catch(IndexOutOfBoundsException e){
-                    System.out.println("No Go");
+            if(isPassible(r+1, c) && (parentNode.parent == null || (parentNode.parent.coord.getColumn() != c || parentNode.parent.coord.getRow() != r+1)) ) {
+                /* UP */
+                Node neighbour = new Node(map.cells[r + 1][c], parentNode);
+                parentNode.addNeighbour(neighbour);
+                System.out.println(parentNode.neighbours.get(i).coord);
+                i++;
+            }
 
-                }
-                try{
-                    if(map.isIn(map.cells[r][c - 1])){
-                        Node neighbour = new Node(map.cells[r][c - 1], parentNode);
-                        parentNode.addNeighbour(neighbour);
-                    }
-                }
-                catch(IndexOutOfBoundsException e){
-                    System.out.println("No Go");
+            if(isPassible(r, c+1) && (parentNode.parent == null || (parentNode.parent.coord.getColumn() != c+1 || parentNode.parent.coord.getRow() != r))) {
+                /* RIGHT */
+                Node neighbour = new Node(map.cells[r][c + 1], parentNode);
+                parentNode.addNeighbour(neighbour);
+                System.out.println(parentNode.neighbours.get(i).coord);
+                i++;
+            }
+            boolean isInCheck = map.isIn(r-1,c);
+            boolean headerCheck = parentNode.parent == null;
+            boolean notParentCheck =parentNode.parent == null || (parentNode.parent.coord.getColumn() != c || parentNode.parent.coord.getRow() != r-1);
 
-                }
-        }             
+            if(isPassible(r-1, c) && (parentNode.parent == null || (parentNode.parent.coord.getColumn() != c || parentNode.parent.coord.getRow() != r-1))) {
+                /* DOWN */
+                Node neighbour = new Node(map.cells[r - 1][c], parentNode);
+                parentNode.addNeighbour(neighbour);
+                System.out.println(parentNode.neighbours.get(i).coord);
+                i++;
+            }
+
+            if(isPassible(r,c-1) && (parentNode.parent == null || (parentNode.parent.coord.getColumn() != c-1 || parentNode.parent.coord.getRow() != r))) {
+                /* LEFT */
+                Node neighbour = new Node(map.cells[r][c - 1], parentNode);
+                parentNode.addNeighbour(neighbour);
+                System.out.println(parentNode.neighbours.get(i).coord);
+            }
+        }
         return parentNode.notVisited();
 
     } // end of ScanAround()
-
+    public boolean isNotDestination(Coordinate coord) {
+        if(coord.getRow() != destinationCoord.getRow() || coord.getColumn() != destinationCoord.getColumn()) {
+            return true;
+        }
+        return false;
+    }
+    public boolean isPassible(int row, int column) {
+        if(map.isIn(row, column)){
+            return !map.cells[row][column].getImpassable();
+        }
+        return false;
+    }
 
 
 } // end of class DijsktraPathFinder
