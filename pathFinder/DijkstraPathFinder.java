@@ -35,10 +35,10 @@ public class DijkstraPathFinder implements PathFinder
 
     } // end of DijkstraPathFinder()
 
-    public boolean explorable(Node currNode) {
+    public boolean explorable(Node node) {
         /* Compare if the weight of the currNode is smaller than it in the dictionary.
            If it's smaller, we update the ArrayList<Node> for it. */
-
+        Node currNode = node;
         int currWeight = currNode.accumlativeCost;
         ArrayList<Coordinate> currentPath = new ArrayList<Coordinate>();
         try {
@@ -50,17 +50,21 @@ public class DijkstraPathFinder implements PathFinder
                     currentPath.add(currNode.coord);
                     currNode = currNode.parent;
                 }
-                shortestPaths.put(currNode.coord, currentPath);
+                currentPath.add(currNode.coord);
+                shortestPaths.put(node.coord, currentPath);
                 return true;
-            } else  {
+            } else {
                 return false;
             }
         } catch(NullPointerException e) {
             /* Happens when dictionary doesn't contain the Node, so the first item in the dictionary. */
-
-            totalWeight.put(currNode.coord, currWeight);
+            while(currNode.parent != null) {
+                currentPath.add(currNode.coord);
+                currNode = currNode.parent;
+            }
             currentPath.add(currNode.coord);
-            shortestPaths.put(currNode.coord, currentPath);
+            totalWeight.put(node.coord, currWeight);
+            shortestPaths.put(node.coord, currentPath);
             return true;
         }
     }
@@ -69,7 +73,7 @@ public class DijkstraPathFinder implements PathFinder
     public List<Coordinate> findPath() {
         List<Coordinate> path = new ArrayList<Coordinate>();
         Node currNode = sourceNode;
-        while(!currNode.visited && currNode != null) {
+        while(currNode != null && !currNode.visited) {
             System.out.println("Current node:" + currNode.coord);
             ArrayList<Node> currNeighBours = currNode.notVisited();
             //When we reach our goal... It . (The nodes we do not vist)
