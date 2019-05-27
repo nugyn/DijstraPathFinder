@@ -25,7 +25,7 @@ public class DijkstraPathFinder implements PathFinder
     private Coordinate sourceCoord;
     private Coordinate destinationCoord;
     private Node sourceNode;
-    private static final int WE_DONT_NEED_THIS = -1;
+    private int count = 0;
 
     public DijkstraPathFinder(PathMap map) {
         this.map = map;
@@ -72,40 +72,40 @@ public class DijkstraPathFinder implements PathFinder
     @Override
     public List<Coordinate> findPath() {
         List<Coordinate> path = new ArrayList<Coordinate>();
-        Node currNode = sourceNode;
+        path = shortestPathFrom(sourceCoord, destinationCoord);
+        return path;
+    } // end of findPath()
+
+    public List<Coordinate> shortestPathFrom(Coordinate source, Coordinate goal){
+        Node currNode = new Node(source, null);
         while(currNode != null && !currNode.visited) {
-            System.out.println("Current node:" + currNode.coord);
             ArrayList<Node> currNeighBours = currNode.notVisited();
             //When we reach our goal... It . (The nodes we do not vist)
-            boolean notDestination = isNotDestination(currNode.coord);
+            boolean notDestination = isNotDestination(currNode.coord, goal);
             boolean existNotVisitedChild = (!currNeighBours.isEmpty() && currNeighBours != null);
-            if(((explorable(currNode)  && isNotDestination(currNode.coord)) || (!currNeighBours.isEmpty() && currNeighBours != null))) {
+            if(((explorable(currNode)  && isNotDestination(currNode.coord, goal)) || (!currNeighBours.isEmpty() && currNeighBours != null))) {
                 /* (if it's explorable or it has no children left to vist) and not the goal */
                 ArrayList<Node> unvisited = ScanAround(currNode); // this is where we add neighbours
                 try {
                     currNode = unvisited.get(0); // problem
                 } catch (NullPointerException e) {
                     /* If the unvisited list is empty */
-                                    System.out.println(e);
                     currNode = currNode.parent;
                 }
             } else {
-                                    System.out.println("check6");
                 if(currNode.parent != null) {
                     currNode.parent.removeNeighbour(currNode);
                 }
                 currNode.visited = true;
+                count += 1;
                 currNode = currNode.parent;
             }
-            System.out.println("---end of loop---");
         }
-        path = shortestPaths.get(destinationCoord);
-        return path;
-    } // end of findPath()
-
+        return shortestPaths.get(goal);
+    }
     @Override
     public int coordinatesExplored() {
-        return WE_DONT_NEED_THIS;
+        return count;
     }
     
     public ArrayList<Node> ScanAround(Node parentNode) {
@@ -161,8 +161,8 @@ public class DijkstraPathFinder implements PathFinder
         return parentNode.notVisited();
 
     } // end of ScanAround()
-    public boolean isNotDestination(Coordinate coord) {
-        if(coord.getRow() != destinationCoord.getRow() || coord.getColumn() != destinationCoord.getColumn()) {
+    public boolean isNotDestination(Coordinate coord, Coordinate goal) {
+        if(coord.getRow() != goal.getRow() || coord.getColumn() != goal.getColumn()) {
             return true;
         }
         return false;
