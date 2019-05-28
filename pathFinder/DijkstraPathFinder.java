@@ -4,6 +4,7 @@ import map.Coordinate;
 import map.PathMap;
 import map.Node;
 import java.util.*;
+import pathFinder.GoalPath;
 
 public class DijkstraPathFinder implements PathFinder
 {
@@ -74,15 +75,28 @@ public class DijkstraPathFinder implements PathFinder
 
     @Override
     public List<Coordinate> findPath() {
+        List<Coordinate> path = new ArrayList<Coordinate>();
+        // List<GoalPath> allThePaths = new ArrayList<GoalPath>;
+        // allThePaths.add(wayPointTraverse(sourceCoord, destinationCoord));
+        // int max = 0;
+        // for(int i = 0; i < allThePaths.size(); i++){
+        //     if(allThePaths.get(i).weight > max){
+        //         max = allThePaths.get(i).weight;
+        //     }
+        // }
+        // 
+        path = wayPointTraverse(sourceCoord, destinationCoord).paths;
+        return path;
+    } // end of findPath()
 
-         /* To build paths for way points
-
+    public GoalPath wayPointTraverse(Coordinate source, Coordinate goal) {
+           /* To build paths for way points
             1) Build a path from source to the first waypoint
                 1a) The path appened to a path Arraylist
             2) Then new source becomes the waypoint from previous step.
             3) Repeat.
+            */
         
-        */ 
         /*
         To build waypoints for multiple destination, and sources
             1) Choose 1 SourceCoord, build the paths to every DestCoord
@@ -90,77 +104,41 @@ public class DijkstraPathFinder implements PathFinder
             2) Repeat until all Sources have been done
             3) For each SourceCoord, choose the smallest path. 
         */
-        List<Coordinate> path = new ArrayList<Coordinate>();
-        boolean begginning = true;
-        /* When the there no waypoints*/
+        List<Coordinate> paths = new ArrayList<Coordinate>();
+        int weight = 0;
         if(map.waypointCells.size() == 0){
-            path = shortestPathFrom(sourceCoord, destinationCoord);
-            
+            /* When the there no waypoints*/
+            GoalPath shortestPath = shortestPathFrom(source, goal);
+            paths = shortestPath.paths;
+            weight = shortestPath.weight;
         } else if(map.waypointCells.size() > 0) { /* When there waypoints*/
-            int wayPointsHit = 0;
             int j = 0; // to store the index of the end to append
-            int count = 0;
+
             ArrayList<Coordinate> wayList = new ArrayList<Coordinate>(map.waypointCells);
-            Coordinate currentCord = wayList.remove(0);
-            path = shortestPathFrom(sourceCoord, currentCord);
+            Coordinate currentCoord = wayList.remove(0);
+            GoalPath shortestPath = shortestPathFrom(source, currentCoord);
+
+            paths = shortestPath.paths;
+            weight = shortestPath.weight;
+
             while(wayList.size() > 0) {
-                j = path.size();
+                j = paths.size();
                 Coordinate nextCoordinate = wayList.remove(0);
-                path.addAll(j, shortestPathFrom(currentCord, nextCoordinate));
-                currentCord = nextCoordinate;
+                shortestPath = shortestPathFrom(currentCoord, nextCoordinate);
+                paths.addAll(j, shortestPath.paths);
+                weight += shortestPath.weight;
+
+                currentCoord = nextCoordinate;
             }
-            path.addAll(j, shortestPathFrom(currentCord, destinationCoord));
-            return path;
-            /* Everytime, we reach a wayPoint, increment, continue to perform until we reach the last waypoint*/
-            // while(wayPointsHit <= map.waypointCells.size()){ 
-            //     /* Build a path to the first waypoint */
-            //     if(begginning == true){
-            //         wayPointSourceCoord = map.originCells.get(0); 
-            //         wayPointDestinationCoord = map.waypointCells.get(0);
-            //         path.addAll(j, shortestPathFrom(wayPointSourceCoord, wayPointDestinationCoord));
-            //         begginning = false;
-            //         j = path.size();
-            //     } /* New source node is the previous waypoint, build a path, then REPEAT */
-            //     else if(begginning == false){
-            //         System.out.println("Beginning is false");
-            //         for(int i = 0; i < map.waypointCells.size() - 1; i++){
-            //             wayPointSourceCoord = map.waypointCells.get(i);
-            //             wayPointDestinationCoord = map.waypointCells.get(i + 1); // 
-            //             path.addAll(j, shortestPathFrom(wayPointSourceCoord, wayPointDestinationCoord));
-            //             j = path.size();
-            //             count++;                
-            //             wayPointsHit++;
-            //         }
-            //     }
-            //     /* Once all waypoints have has paths build, the last path is the last waypoint to the destination */
-            //     if(wayPointsHit == map.waypointCells.size() - 1){
-            //         System.out.println("++++++++++++++++>" + j + ":" + wayPointsHit + ":" + map.waypointCells.size() + ":" + count);
-            //         wayPointSourceCoord = map.waypointCells.get(map.waypointCells.size() - 1);
-            //         path.addAll(j, shortestPathFrom(wayPointSourceCoord, destinationCoord));
-            //     }
-            //     // wayPointsHit++;
-            // }
-           
+            shortestPath = shortestPathFrom(currentCoord, goal);
+            paths.addAll(j, shortestPath.paths);
+            weight += shortestPath.weight;
+            return new GoalPath(paths, weight);
         }
-        // else if(map.destCells.size() > 1 || map.originCells.size() > 1){
-        //   //  int j = 0;
-        //     /* Build a path from each source, to every destination coordinate, then store each one in a list for comparison */
-        //     while(j < map.originCells.size()){ 
-        //         for(int i = 0; i < map.originCells.size(); i++){
-        //             sourceCoord = map.originCells.get(j);
-        //             destinationCoord = map.destCells.get(i);
-        //             path = shortestPathFrom(sourceCoord, destinationCoord);
-        //             // sourceCoordPaths.put(sourceCoord, shortestPathFrom(sourceCoord, destinationCoord));
-        //         }
-        //         j++;
-        //     }
-            
-        // }        
+        return new GoalPath(paths, weight);
+    }
 
-        return path;
-    } // end of findPath()
-
-    public List<Coordinate> shortestPathFrom(Coordinate source, Coordinate goal){
+    public GoalPath shortestPathFrom(Coordinate source, Coordinate goal){
         totalWeight = new HashMap<Coordinate, Integer>();
         shortestPaths = new HashMap<Coordinate, List<Coordinate>>();
         Node currNode = new Node(source, null);
@@ -187,8 +165,9 @@ public class DijkstraPathFinder implements PathFinder
                 currNode = currNode.parent;
             }
         }
-        return shortestPaths.get(goal);
+        return new GoalPath(shortestPaths.get(goal), totalWeight.get(goal));
     }
+
     @Override
     public int coordinatesExplored() {
         return count;
