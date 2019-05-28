@@ -22,6 +22,7 @@ public class DijkstraPathFinder implements PathFinder
     private PathMap map;
     private Map<Coordinate, Integer> totalWeight = new HashMap<Coordinate, Integer>();
     private Map<Coordinate, List<Coordinate>> shortestPaths = new HashMap<Coordinate, List<Coordinate>>();
+    private Map<Coordinate, List<Coordinate>> sourceCoordPaths = new HashMap<Coordinate, List<Coordinate>>();
     private Coordinate sourceCoord;
     private Coordinate destinationCoord;
     private Node sourceNode;
@@ -71,8 +72,80 @@ public class DijkstraPathFinder implements PathFinder
 
     @Override
     public List<Coordinate> findPath() {
+
+         /* To build paths for way points
+
+            1) Build a path from source to the first waypoint
+                1a) The path appened to a path Arraylist
+            2) Then new source becomes the waypoint from previous step.
+            3) Repeat.
+        
+        */ 
+        
+        
+        
+        /*
+        To build waypoints for multiple destination, and sources
+            1) Choose 1 SourceCoord, build the paths to every DestCoord
+                1a) Store these two paths into a map?
+            2) Repeat until all Sources have been done
+            3) For each SourceCoord, choose the smallest path. 
+        */
         List<Coordinate> path = new ArrayList<Coordinate>();
-        path = shortestPathFrom(sourceCoord, destinationCoord);
+        boolean begginning = true;
+
+        /* When the there no waypoints*/
+        if(map.waypointCells.size() == 0){
+            sourceCoord = map.originCells.get(0);
+            destinationCoord = map.destCells.get(0);
+            path = shortestPathFrom(sourceCoord, destinationCoord);
+        }
+        else if(map.waypointCells.size() > 0){ /* When there waypoints*/
+            int wayPointsHit = 0;
+            /* Everytime, we reach a wayPoint, increment, continue to perform until we reach the last waypoint*/
+            while(wayPointsHit < map.waypointCells.size()){ 
+                int j = 0;
+                /* Build a path to the first waypoint */
+                if(begginning == true){
+                sourceCoord = map.originCells.get(0); 
+                destinationCoord = map.waypointCells.get(0);
+                path.addAll(j, shortestPathFrom(sourceCoord, destinationCoord));
+                begginning = false;
+                    wayPointsHit++;
+                } /* New source node is the previous waypoint, build a path, then REPEAT */
+                else if(begginning == false){
+                    System.out.println("Beginning is false");
+                    for(int i = 0; i < map.waypointCells.size() - 1; i++){
+                        sourceCoord = map.waypointCells.get(i);
+                        destinationCoord = map.waypointCells.get(i + 1);
+                        path.addAll(j, shortestPathFrom(sourceCoord, destinationCoord));
+                        j = path.size();
+                        wayPointsHit++;
+                    }
+                }
+                /* Once all waypoints have has paths build, the last path is the last waypoint to the destination */
+                if(wayPointsHit == map.waypointCells.size()){
+                    sourceCoord = map.waypointCells.get(map.waypointCells.size() - 1);
+                    destinationCoord = map.destCells.get(0);
+                    path.addAll(j, shortestPathFrom(sourceCoord, destinationCoord));
+                }
+             }
+        }
+        else if(map.destCells.size() > 1 || map.originCells.size() > 1){
+            int j = 0;
+            /* Build a path from each source, to every destination coordinate, then store each one in a list for comparison */
+            while(j < map.originCells.size()){ 
+                for(int i = 0; i < map.originCells.size(); i++){
+                    sourceCoord = map.originCells.get(j);
+                    destinationCoord = map.destCells.get(i);
+                    path = shortestPathFrom(sourceCoord, destinationCoord);
+                    // sourceCoordPaths.put(sourceCoord, shortestPathFrom(sourceCoord, destinationCoord));
+                }
+                j++;
+            }
+            
+        }        
+
         return path;
     } // end of findPath()
 
