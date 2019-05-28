@@ -24,19 +24,16 @@ public class DijkstraPathFinder implements PathFinder
     private Map<Coordinate, Integer> totalWeight;
     private Map<Coordinate, List<Coordinate>> shortestPaths;
     private Map<Coordinate, List<Coordinate>> sourceCoordPaths = new HashMap<Coordinate, List<Coordinate>>();
-    private Coordinate sourceCoord;
-    private Coordinate destinationCoord;
+    private List<Coordinate> sourceCoord;
+    private List<Coordinate> destinationCoord;
     private Coordinate wayPointSourceCoord;
     private Coordinate wayPointDestinationCoord;
-    private Node sourceNode;
     private int count = 0;
 
     public DijkstraPathFinder(PathMap map) {
         this.map = map;
-        this.sourceCoord = map.originCells.get(0);
-        this.destinationCoord = map.destCells.get(0);
-        sourceNode = new Node(sourceCoord, null);
-
+        this.sourceCoord = map.originCells;
+        this.destinationCoord = map.destCells;
     } // end of DijkstraPathFinder()
 
     public boolean explorable(Node node) {
@@ -76,16 +73,26 @@ public class DijkstraPathFinder implements PathFinder
     @Override
     public List<Coordinate> findPath() {
         List<Coordinate> path = new ArrayList<Coordinate>();
-        // List<GoalPath> allThePaths = new ArrayList<GoalPath>;
-        // allThePaths.add(wayPointTraverse(sourceCoord, destinationCoord));
-        // int max = 0;
-        // for(int i = 0; i < allThePaths.size(); i++){
-        //     if(allThePaths.get(i).weight > max){
-        //         max = allThePaths.get(i).weight;
-        //     }
-        // }
-        // 
-        path = wayPointTraverse(sourceCoord, destinationCoord).paths;
+        int index = 0;
+
+        for(Coordinate source: sourceCoord) {
+            index = path.size();
+            List<GoalPath> allThePaths = new ArrayList<GoalPath>();
+            int largestWeight = 0;
+            GoalPath shortest = null;
+            for(Coordinate goal: destinationCoord) {
+                allThePaths.add(wayPointTraverse(source, goal));
+            }
+            for(GoalPath aPath : allThePaths) {
+                if(aPath.weight > largestWeight) {
+                    largestWeight = aPath.weight;
+                    shortest = aPath;
+                }
+            }
+            /* We got the shortest destination */
+            path.addAll(index, shortest.paths);
+            
+        }
         return path;
     } // end of findPath()
 
@@ -112,7 +119,7 @@ public class DijkstraPathFinder implements PathFinder
             paths = shortestPath.paths;
             weight = shortestPath.weight;
         } else if(map.waypointCells.size() > 0) { /* When there waypoints*/
-            int j = 0; // to store the index of the end to append
+            int index = 0; // to store the index of the end to append
 
             ArrayList<Coordinate> wayList = new ArrayList<Coordinate>(map.waypointCells);
             Coordinate currentCoord = wayList.remove(0);
@@ -122,16 +129,16 @@ public class DijkstraPathFinder implements PathFinder
             weight = shortestPath.weight;
 
             while(wayList.size() > 0) {
-                j = paths.size();
+                index = paths.size();
                 Coordinate nextCoordinate = wayList.remove(0);
                 shortestPath = shortestPathFrom(currentCoord, nextCoordinate);
-                paths.addAll(j, shortestPath.paths);
+                paths.addAll(index, shortestPath.paths);
                 weight += shortestPath.weight;
 
                 currentCoord = nextCoordinate;
             }
             shortestPath = shortestPathFrom(currentCoord, goal);
-            paths.addAll(j, shortestPath.paths);
+            paths.addAll(index, shortestPath.paths);
             weight += shortestPath.weight;
             return new GoalPath(paths, weight);
         }
@@ -147,12 +154,12 @@ public class DijkstraPathFinder implements PathFinder
             //When we reach our goal... It . (The nodes we do not vist)
             boolean notDestination = isNotDestination(currNode.coord, goal);
             boolean existNotVisitedChild = (!currNeighBours.isEmpty() && currNeighBours != null);
-            if(((explorable(currNode)  && isNotDestination(currNode.coord, goal)) || (!currNeighBours.isEmpty() && currNeighBours != null))) {
+            if(((explorable(currNode)  && isNotDestination(currNode.coord, goal)) || ( currNeighBours != null &&!currNeighBours.isEmpty()))) {
                 /* (if it's explorable or it has no children left to vist) and not the goal */
                 ArrayList<Node> unvisited = ScanAround(currNode); // this is where we add neighbours
                 try {
                     currNode = unvisited.get(0); // problem
-                } catch (NullPointerException e) {
+                } catch (Exception e) {
                     /* If the unvisited list is empty */
                     currNode = currNode.parent;
                 }
@@ -165,6 +172,10 @@ public class DijkstraPathFinder implements PathFinder
                 currNode = currNode.parent;
             }
         }
+        System.out.println(shortestPaths.get(goal));
+        System.out.println("------------------------------------------");
+        System.out.println(totalWeight.get(goal));
+
         return new GoalPath(shortestPaths.get(goal), totalWeight.get(goal));
     }
 
