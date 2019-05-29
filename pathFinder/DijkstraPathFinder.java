@@ -159,10 +159,13 @@ public class DijkstraPathFinder implements PathFinder
                 ArrayList<Node> unvisited = ScanAround(currNode); // this is where we add neighbours
                 try {
                     currNode = unvisited.get(0); // problem
-                } catch (Exception e) {
+                } catch (NullPointerException e) {
                     /* If the unvisited list is empty */
                     currNode = currNode.parent;
+                } catch (IndexOutOfBoundsException e){
+                    currNode = currNode.parent;
                 }
+                
             } else {
                 if(currNode.parent != null) {
                     currNode.parent.removeNeighbour(currNode);

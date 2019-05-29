@@ -40,6 +40,7 @@ public class Node {
         */
         ArrayList<Node> result = new ArrayList<Node>();
 
+
         if(neighbours != null) {
             for(Node node: neighbours) {
                 if(node.visited != true) {
