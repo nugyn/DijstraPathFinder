@@ -74,7 +74,8 @@ public class DijkstraPathFinder implements PathFinder
     public List<Coordinate> findPath() {
         List<Coordinate> path = new ArrayList<Coordinate>();
         int index = 0;
-
+        List<GoalPath> compareGoals = new ArrayList<GoalPath>();
+        int compWeight = 0;
         for(Coordinate source: sourceCoord) {
             index = path.size();
             List<GoalPath> allThePaths = new ArrayList<GoalPath>();
@@ -91,8 +92,13 @@ public class DijkstraPathFinder implements PathFinder
             }
             /* We got the shortest destination */
             // path.addAll(index, shortest.paths);
-            path = shortest.paths;
-            
+            compareGoals.add(shortest);
+        }
+        for(GoalPath pathToGoal : compareGoals) {
+            if(pathToGoal.weight < compWeight || compWeight == 0) {
+                compWeight = pathToGoal.weight;
+                path = pathToGoal.paths;
+            }
         }
         return path;
     } // end of findPath()
@@ -176,10 +182,6 @@ public class DijkstraPathFinder implements PathFinder
                 currNode = currNode.parent;
             }
         }
-        System.out.println(shortestPaths.get(goal));
-        System.out.println("------------------------------------------");
-        System.out.println(totalWeight.get(goal));
-
         return new GoalPath(shortestPaths.get(goal), totalWeight.get(goal));
     }
 
