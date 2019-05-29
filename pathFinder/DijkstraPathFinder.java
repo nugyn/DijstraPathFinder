@@ -78,19 +78,20 @@ public class DijkstraPathFinder implements PathFinder
         for(Coordinate source: sourceCoord) {
             index = path.size();
             List<GoalPath> allThePaths = new ArrayList<GoalPath>();
-            int largestWeight = 0;
+            int smallestWeight = 0;
             GoalPath shortest = null;
             for(Coordinate goal: destinationCoord) {
                 allThePaths.add(wayPointTraverse(source, goal));
             }
             for(GoalPath aPath : allThePaths) {
-                if(aPath.weight > largestWeight) {
-                    largestWeight = aPath.weight;
+                if(aPath.weight < smallestWeight || smallestWeight == 0) {
+                    smallestWeight = aPath.weight;
                     shortest = aPath;
                 }
             }
             /* We got the shortest destination */
-            path.addAll(index, shortest.paths);
+            // path.addAll(index, shortest.paths);
+            path = shortest.paths;
             
         }
         return path;
