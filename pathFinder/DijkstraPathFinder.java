@@ -8,26 +8,11 @@ import pathFinder.GoalPath;
 
 public class DijkstraPathFinder implements PathFinder
 {
-    /* PSEUDO:
-     *1. Make a dictionary to store the visted nodes shortest path total weight
-     *2. Make a ArrList- Linklist to store the shortest path
-
-     *3. Go to the node, generate type Node based on Coordinate. Fill in the neighbours
-     *4. Add the weight node to the dictionary, the node to the array with head = The source
-     *5. if Node == goal. or Node.weight >= dict[Node], STOP!.
-     *6. If visited every node's neighbour, check the parent visited.
-     *
-     * Weight get by direction coordinate.cost.
-     */
-
     private PathMap map;
     private Map<Coordinate, Integer> totalWeight;
     private Map<Coordinate, List<Coordinate>> shortestPaths;
-    private Map<Coordinate, List<Coordinate>> sourceCoordPaths = new HashMap<Coordinate, List<Coordinate>>();
     private List<Coordinate> sourceCoord;
     private List<Coordinate> destinationCoord;
-    private Coordinate wayPointSourceCoord;
-    private Coordinate wayPointDestinationCoord;
     private int count = 0;
 
     public DijkstraPathFinder(PathMap map) {
@@ -43,8 +28,8 @@ public class DijkstraPathFinder implements PathFinder
         int currWeight = currNode.accumlativeCost;
         ArrayList<Coordinate> currentPath = new ArrayList<Coordinate>();
         try {
-            int weight = (int) totalWeight.get(currNode.coord); // store coordinate instead of currentNode.
-            if(currWeight < weight) {
+            int weight = (int) totalWeight.get(currNode.coord);
+            if(currWeight < weight) { // If it is shorter than what we have.
                 totalWeight.put(currNode.coord, currWeight);
                 /*  update in the map list */
                 while(currNode.parent != null) {
@@ -58,7 +43,8 @@ public class DijkstraPathFinder implements PathFinder
                 return false;
             }
         } catch(NullPointerException e) {
-            /* Happens when dictionary doesn't contain the Node, so the first item in the dictionary. */
+            /* Happens when dictionary doesn't contain the Node, 
+            so it is the first item in the dictionary. */
             while(currNode.parent != null) {
                 currentPath.add(currNode.coord);
                 currNode = currNode.parent;
@@ -73,11 +59,9 @@ public class DijkstraPathFinder implements PathFinder
     @Override
     public List<Coordinate> findPath() {
         List<Coordinate> path = new ArrayList<Coordinate>();
-        int index = 0;
         List<GoalPath> compareGoals = new ArrayList<GoalPath>();
         int compWeight = 0;
         for(Coordinate source: sourceCoord) {
-            index = path.size();
             List<GoalPath> allThePaths = new ArrayList<GoalPath>();
             int smallestWeight = 0;
             GoalPath shortest = null;
@@ -91,7 +75,6 @@ public class DijkstraPathFinder implements PathFinder
                 }
             }
             /* We got the shortest destination */
-            // path.addAll(index, shortest.paths);
             compareGoals.add(shortest);
         }
         for(GoalPath pathToGoal : compareGoals) {
@@ -104,15 +87,14 @@ public class DijkstraPathFinder implements PathFinder
     } // end of findPath()
 
     public GoalPath wayPointTraverse(Coordinate source, Coordinate goal) {
-           /* To build paths for way points
+        /* PSEUDO:
+            To build paths for way points
             1) Build a path from source to the first waypoint
                 1a) The path appened to a path Arraylist
             2) Then new source becomes the waypoint from previous step.
             3) Repeat.
-            */
-        
-        /*
-        To build waypoints for multiple destination, and sources
+
+            To build waypoints for multiple destination, and sources
             1) Choose 1 SourceCoord, build the paths to every DestCoord
                 1a) Store these two paths into a map?
             2) Repeat until all Sources have been done
@@ -141,7 +123,6 @@ public class DijkstraPathFinder implements PathFinder
                 shortestPath = shortestPathFrom(currentCoord, nextCoordinate);
                 paths.addAll(index, shortestPath.paths);
                 weight += shortestPath.weight;
-
                 currentCoord = nextCoordinate;
             }
             shortestPath = shortestPathFrom(currentCoord, goal);
@@ -153,34 +134,68 @@ public class DijkstraPathFinder implements PathFinder
     }
 
     public GoalPath shortestPathFrom(Coordinate source, Coordinate goal){
+        /* PSEUDO:
+            1. Make a dictionary to store the visted nodes shortest path total 
+               weight
+
+            2. Make a ArrList- Linklist to store the shortest path
+
+            3. Go to the node, generate type Node based on Coordinate. Fill in 
+               the neighbours
+
+            4. if weight of the node < than existed one in the dictionary or 
+               it's the first instance of the dictionary,
+               add it in the dictionary and update the shortest path to it.
+
+            5. if Node == goal. and Node.weight >= dict[Node] or there is no 
+               child to visit, STOP!. Go to 8.
+
+            6. else, we scan around to find to unvisited child, and assign the 
+               current node to the first child. repeat from 4
+
+            7. if there is  no children left to visit, we go back to the parent
+               to check, repeat from 4.
+
+            8. If the current node has a parent, we remove itself as the 
+               neighbours.
+
+            10. Mark the current node as visited and set the current node to be
+               the parent. repeat from 4.
+
+            11. we stop if the currentNode is null, when the current node is 
+               null, we have the shortestPaths from the dictionary.
+        */
         totalWeight = new HashMap<Coordinate, Integer>();
         shortestPaths = new HashMap<Coordinate, List<Coordinate>>();
         Node currNode = new Node(source, null);
+        count  = 0;
         while(currNode != null && !currNode.visited) {
             ArrayList<Node> currNeighBours = currNode.notVisited();
-            //When we reach our goal... It . (The nodes we do not vist)
-            boolean notDestination = isNotDestination(currNode.coord, goal);
-            boolean existNotVisitedChild = (!currNeighBours.isEmpty() && currNeighBours != null);
-            if(((explorable(currNode)  && isNotDestination(currNode.coord, goal)) || ( currNeighBours != null &&!currNeighBours.isEmpty()))) {
+            // When we reach our goal... It . (The nodes we do not vist)
+            if(((explorable(currNode) && isNotDestination(currNode.coord, goal)) || (currNeighBours != null &&!currNeighBours.isEmpty()))) {
                 /* (if it's explorable or it has no children left to vist) and not the goal */
                 ArrayList<Node> unvisited = ScanAround(currNode); // this is where we add neighbours
                 try {
-                    currNode = unvisited.get(0); // problem
-                } catch (NullPointerException e) {
-                    /* If the unvisited list is empty */
-                    currNode = currNode.parent;
-                } catch (IndexOutOfBoundsException e){
+                    currNode = unvisited.get(0); // set the node to be the first children
+                } catch (Exception e){
+                    // If there is no children left to visit, go back to the parent.
                     currNode = currNode.parent;
                 }
                 
             } else {
+                /* 
+                   This is likely happens when the weight of the path is larger
+                   or it is the goal.
+                   
+                   We simply don't need to traverse further
+                */
                 if(currNode.parent != null) {
                     currNode.parent.removeNeighbour(currNode);
                 }
                 currNode.visited = true;
-                count += 1;
                 currNode = currNode.parent;
             }
+            count += 1;
         }
         return new GoalPath(shortestPaths.get(goal), totalWeight.get(goal));
     }
@@ -190,59 +205,54 @@ public class DijkstraPathFinder implements PathFinder
         return count;
     }
     
-    public ArrayList<Node> ScanAround(Node parentNode) {
-
-        /* UP: [r + 1][c] 
-        RIGHT: [r][ c + 1] 
-        DOWN: [r - 1][c] 
-        LEFT: [r][c - 1] 
-        
-        ISSUE: Base Condition for when r or c are 0 (Creates Index out of Bounds)*/
-
-        int c = parentNode.coord.getColumn();
-        int r = parentNode.coord.getRow();
+    public ArrayList<Node> ScanAround(Node node) {
+        /*
+         * Scan around for the potential neighbours. The condition is:
+         * - The coordinate has to passable.
+         * - It should not be the same with its parent.
+         * Once the two conditions are met, we add the coordinate to the neighbours 
+         * of the node.
+         */
+        int c = node.coord.getColumn();
+        int r = node.coord.getRow();
         int i = 0;
-        //Build neighbours
 
-        if(parentNode.scanned == false) {
+        if(node.scanned == false) {
 
-            if(isPassible(r+1, c) && (parentNode.parent == null || (parentNode.parent.coord.getColumn() != c || parentNode.parent.coord.getRow() != r+1)) ) {
+            if(isPassible(r+1, c) && notColliseWithParent(r+1, c, node)) {
                 /* UP */
-                Node neighbour = new Node(map.cells[r + 1][c], parentNode);
-                parentNode.addNeighbour(neighbour);
-                System.out.println(parentNode.neighbours.get(i).coord);
+                Node neighbour = new Node(map.cells[r + 1][c], node);
+                node.addNeighbour(neighbour);
                 i++;
             }
 
-            if(isPassible(r, c+1) && (parentNode.parent == null || (parentNode.parent.coord.getColumn() != c+1 || parentNode.parent.coord.getRow() != r))) {
+            if(isPassible(r, c+1) && notColliseWithParent(r, c+1, node)) {
                 /* RIGHT */
-                Node neighbour = new Node(map.cells[r][c + 1], parentNode);
-                parentNode.addNeighbour(neighbour);
-                System.out.println(parentNode.neighbours.get(i).coord);
+                Node neighbour = new Node(map.cells[r][c + 1], node);
+                node.addNeighbour(neighbour);
                 i++;
             }
-            boolean isInCheck = map.isIn(r-1,c);
-            boolean headerCheck = parentNode.parent == null;
-            boolean notParentCheck =parentNode.parent == null || (parentNode.parent.coord.getColumn() != c || parentNode.parent.coord.getRow() != r-1);
 
-            if(isPassible(r-1, c) && (parentNode.parent == null || (parentNode.parent.coord.getColumn() != c || parentNode.parent.coord.getRow() != r-1))) {
+            if(isPassible(r-1, c) && notColliseWithParent(r-1, c, node)) {
                 /* DOWN */
-                Node neighbour = new Node(map.cells[r - 1][c], parentNode);
-                parentNode.addNeighbour(neighbour);
-                System.out.println(parentNode.neighbours.get(i).coord);
+                Node neighbour = new Node(map.cells[r - 1][c], node);
+                node.addNeighbour(neighbour);
                 i++;
             }
 
-            if(isPassible(r,c-1) && (parentNode.parent == null || (parentNode.parent.coord.getColumn() != c-1 || parentNode.parent.coord.getRow() != r))) {
+            if(isPassible(r, c-1) && notColliseWithParent(r, c-1, node)) {
                 /* LEFT */
-                Node neighbour = new Node(map.cells[r][c - 1], parentNode);
-                parentNode.addNeighbour(neighbour);
-                System.out.println(parentNode.neighbours.get(i).coord);
+                Node neighbour = new Node(map.cells[r][c - 1], node);
+                node.addNeighbour(neighbour);
             }
         }
-        return parentNode.notVisited();
+        return node.notVisited();
 
     } // end of ScanAround()
+    public boolean notColliseWithParent(int r, int c, Node sourceNode) {
+        return sourceNode.parent == null || 
+        (sourceNode.parent.coord.getColumn() != c || sourceNode.parent.coord.getRow() != r);
+    }
     public boolean isNotDestination(Coordinate coord, Coordinate goal) {
         if(coord.getRow() != goal.getRow() || coord.getColumn() != goal.getColumn()) {
             return true;
