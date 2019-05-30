@@ -5,6 +5,7 @@ import map.PathMap;
 import map.Node;
 import java.util.*;
 import pathFinder.GoalPath;
+import pathFinder.WayPoint;
 
 public class DijkstraPathFinder implements PathFinder
 {
@@ -61,29 +62,33 @@ public class DijkstraPathFinder implements PathFinder
         List<Coordinate> path = new ArrayList<Coordinate>();
         List<GoalPath> compareGoals = new ArrayList<GoalPath>();
         int compWeight = 0;
-        for(Coordinate source: sourceCoord) {
-            List<GoalPath> allThePaths = new ArrayList<GoalPath>();
-            int smallestWeight = 0;
-            GoalPath shortest = null;
-            for(Coordinate goal: destinationCoord) {
-                allThePaths.add(wayPointTraverse(source, goal));
+        try {
+            for(Coordinate source: sourceCoord) {
+                List<GoalPath> allThePaths = new ArrayList<GoalPath>();
+                int smallestWeight = 0;
+                GoalPath shortest = null;
+                for(Coordinate goal: destinationCoord) {
+                    allThePaths.add(wayPointTraverse(source, goal));
+                }
+                for(GoalPath aPath : allThePaths) {
+                    if(aPath.weight < smallestWeight || smallestWeight == 0) {
+                        smallestWeight = aPath.weight;
+                        shortest = aPath;
+                    }
+                }
+                /* We got the shortest destination */
+                compareGoals.add(shortest);
             }
-            for(GoalPath aPath : allThePaths) {
-                if(aPath.weight < smallestWeight || smallestWeight == 0) {
-                    smallestWeight = aPath.weight;
-                    shortest = aPath;
+            for(GoalPath pathToGoal : compareGoals) {
+                if(pathToGoal.weight < compWeight || compWeight == 0) {
+                    compWeight = pathToGoal.weight;
+                    path = pathToGoal.paths;
                 }
             }
-            /* We got the shortest destination */
-            compareGoals.add(shortest);
+            System.out.println("path size: " + path.size());
+        } catch(NullPointerException e) {
+            /* No path found */
         }
-        for(GoalPath pathToGoal : compareGoals) {
-            if(pathToGoal.weight < compWeight || compWeight == 0) {
-                compWeight = pathToGoal.weight;
-                path = pathToGoal.paths;
-            }
-        }
-        System.out.println("path size: " + path.size());
         return path;
     } // end of findPath()
 
@@ -112,30 +117,56 @@ public class DijkstraPathFinder implements PathFinder
             int index = 0; // to store the index of the end to append
 
             ArrayList<Coordinate> wayList = new ArrayList<Coordinate>(map.waypointCells);
-            Coordinate currentCoord = wayList.remove(0);
-            GoalPath shortestPath = shortestPathFrom(source, currentCoord);
+            WayPoint currentWayPoint = shortestWayPoint(source, wayList);
+            try {
+                wayList.remove(currentWayPoint.self);
 
-            paths = shortestPath.paths;
-            weight = shortestPath.weight;
-
-            while(wayList.size() > 0) {
-                /* Remove the last item of the paths to avoid duplication */
+                paths = currentWayPoint.paths;
+                weight = currentWayPoint.weight;
+    
+                while(wayList.size() > 0) {
+                    /* Remove the last item of the paths to avoid duplication */
+                    paths.remove(paths.size() - 1);
+                    index = paths.size();
+                    WayPoint nextWayPoint = shortestWayPoint(currentWayPoint.self, wayList);
+                    paths.addAll(index, nextWayPoint.paths);
+                    weight += nextWayPoint.weight;
+                    currentWayPoint = nextWayPoint;
+                    wayList.remove(currentWayPoint.self);
+                }
                 paths.remove(paths.size() - 1);
                 index = paths.size();
-                Coordinate nextCoordinate = wayList.remove(0);
-                shortestPath = shortestPathFrom(currentCoord,nextCoordinate);
+                GoalPath shortestPath = shortestPathFrom(currentWayPoint.self, goal);
                 paths.addAll(index, shortestPath.paths);
                 weight += shortestPath.weight;
-                currentCoord = nextCoordinate;
+                return new GoalPath(paths, weight);
+            } catch (NullPointerException e) {
+                /* There is no path */
+                return null;
             }
-            paths.remove(paths.size() - 1);
-            index = paths.size();
-            shortestPath = shortestPathFrom(currentCoord, goal);
-            paths.addAll(index, shortestPath.paths);
-            weight += shortestPath.weight;
-            return new GoalPath(paths, weight);
+
         }
         return new GoalPath(paths, weight);
+    }
+
+    public WayPoint shortestWayPoint(Coordinate source, List<Coordinate> waypoints) {
+        /* Return a nearest waypoint from a waypoint list. */
+        int smallestWeight = 0;
+        WayPoint nearest = new WayPoint();
+        
+        for(Coordinate point : waypoints) {
+            GoalPath tryPath = shortestPathFrom(source, point);
+            if(tryPath != null) {
+                if(smallestWeight == 0 || tryPath.weight < smallestWeight) {
+                    smallestWeight = tryPath.weight;
+                    nearest = new WayPoint(source, tryPath.paths, point, tryPath.weight);
+                }
+            } else {
+                return null;
+            }
+        }
+
+        return nearest;
     }
 
     public GoalPath shortestPathFrom(Coordinate source, Coordinate goal){
@@ -202,7 +233,11 @@ public class DijkstraPathFinder implements PathFinder
             }
             count += 1;
         }
-        Collections.reverse(shortestPaths.get(goal));
+        if(shortestPaths.get(goal) != null) {
+            Collections.reverse(shortestPaths.get(goal));
+        } else {
+            return null;
+        }
         return new GoalPath(shortestPaths.get(goal), totalWeight.get(goal));
     }
 
