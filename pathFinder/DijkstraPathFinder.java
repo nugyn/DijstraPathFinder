@@ -83,6 +83,7 @@ public class DijkstraPathFinder implements PathFinder
                 path = pathToGoal.paths;
             }
         }
+        System.out.println("path size: " + path.size());
         return path;
     } // end of findPath()
 
@@ -118,13 +119,17 @@ public class DijkstraPathFinder implements PathFinder
             weight = shortestPath.weight;
 
             while(wayList.size() > 0) {
+                /* Remove the last item of the paths to avoid duplication */
+                paths.remove(paths.size() - 1);
                 index = paths.size();
                 Coordinate nextCoordinate = wayList.remove(0);
-                shortestPath = shortestPathFrom(currentCoord, nextCoordinate);
+                shortestPath = shortestPathFrom(currentCoord,nextCoordinate);
                 paths.addAll(index, shortestPath.paths);
                 weight += shortestPath.weight;
                 currentCoord = nextCoordinate;
             }
+            paths.remove(paths.size() - 1);
+            index = paths.size();
             shortestPath = shortestPathFrom(currentCoord, goal);
             paths.addAll(index, shortestPath.paths);
             weight += shortestPath.weight;
@@ -197,6 +202,7 @@ public class DijkstraPathFinder implements PathFinder
             }
             count += 1;
         }
+        Collections.reverse(shortestPaths.get(goal));
         return new GoalPath(shortestPaths.get(goal), totalWeight.get(goal));
     }
 
