@@ -17,3 +17,8 @@ chmod +x simpleTest.bash
 3. DijkstraPathFinder.java should be automatically compiled on save. Open a new terminal, run:
 ./simpleTest.bash
 for the first test using example1.
+
+CONTRIBUTORS
+
+Austin Pham
+Duy Linh Nguyen
